@@ -1,0 +1,18 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+venv/
+env/
+.env
+
+# Build and packaging
+build/
+dist/
+*.egg-info/
+smart_deploy.egg-info/
+
+# Logs
+*.log
