@@ -1,4 +1,6 @@
 import typer
+import shutil
+import getpass
 import subprocess
 from .database import save_project
 from .github_api import setup_webhook
@@ -41,6 +43,41 @@ def start(port: int = typer.Option(9000, "--port", "-p", help="Port number for t
     
     # فراخوانی Uvicorn به عنوان سرور اجرای FastAPI
     subprocess.run(["uvicorn", "smart_deploy.server:app", "--host", "0.0.0.0", "--port", str(port)])
+
+@app.command()
+def generate_service(port: int = typer.Option(9000, "--port", "-p", help="Port number for the webhook listener")):
+    """
+    Generate a systemd service configuration for Linux servers to run in the background.
+    """
+    # پیدا کردن مسیر دقیق فایل اجرایی و نام کاربری لینوکس
+    executable = shutil.which("smart-deploy") or "/usr/local/bin/smart-deploy"
+    user = getpass.getuser()
+    
+    service_content = f"""[Unit]
+Description=Smart Deploy Webhook Listener
+After=network.target
+
+[Service]
+User={user}
+ExecStart={executable} start --port {port}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+"""
+    
+    typer.secho("1. Create a new service file using nano:", fg=typer.colors.CYAN)
+    typer.echo("sudo nano /etc/systemd/system/smart-deploy.service\n")
+    
+    typer.secho("2. Paste the following configuration into the file:\n", fg=typer.colors.CYAN)
+    typer.echo(service_content)
+    
+    typer.secho("3. Enable and start the service by running:", fg=typer.colors.YELLOW)
+    typer.echo("sudo systemctl daemon-reload")
+    typer.echo("sudo systemctl enable smart-deploy")
+    typer.echo("sudo systemctl start smart-deploy")
+    typer.echo("sudo systemctl status smart-deploy")
 
 if __name__ == "__main__":
     app()
