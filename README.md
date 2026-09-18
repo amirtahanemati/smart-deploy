@@ -1,4 +1,3 @@
-````markdown
 # 🚀 Smart Deploy
 
 ![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
@@ -32,7 +31,6 @@ cd smart-deploy
 # Install the package globally
 pip install -e .
 ```
-````
 
 ---
 
