@@ -1,5 +1,6 @@
 # 🚀 Smart Deploy
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/amirtahanemati/smart-deploy/python-package.yml?branch=main)
 ![PyPI version](https://img.shields.io/pypi/v/smart-deploy?color=blue)
 ![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
