@@ -1,40 +1,49 @@
-from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
-from .database import get_project
-from .detector import pull_repo, detect_and_deploy
+from fastapi import FastAPI, Request, BackgroundTasks
+from .database import get_project, load_projects
+from .detector import detect_and_deploy
 
-app = FastAPI(title="Smart Deploy Webhook Receiver")
-
-def handle_deployment(project_info: dict):
-    """Background task to handle the deployment process."""
-    path = project_info.get("path")
-    token = project_info.get("token")
-    repo_url = project_info.get("repo_url")
-    restart_cmd = project_info.get("restart_cmd")
-
-    print(f"--- Initiating deployment pipeline for {repo_url} ---")
-    
-    if pull_repo(path, token, repo_url):
-        detect_and_deploy(path, restart_cmd)
-        print("--- Deployment pipeline executed successfully ---")
-    else:
-        print("--- Deployment pipeline aborted: Pull operation failed ---")
+app = FastAPI()
 
 @app.post("/webhook")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
-    """Endpoint for receiving GitHub webhook push events."""
-    payload = await request.json()
-    
-    # استخراج نام کامل ریپازیتوری از دیتای ارسالی گیت‌هاب جهت تطبیق با دیتابیس محلی
+    print("\n--- Webhook Received ---")
     try:
-        repo_name = payload["repository"]["full_name"]
-    except KeyError:
-        raise HTTPException(status_code=400, detail="Malformed GitHub payload structure.")
+        payload = await request.json()
+        
+        # بررسی اینکه آیا درخواست از نوع پوش (Push) است
+        if "ref" not in payload:
+            print("Ignored: Not a push event.")
+            return {"message": "Ignored: Not a push event"}
 
-    project_info = get_project(repo_name)
-    if not project_info:
-        raise HTTPException(status_code=404, detail=f"Repository '{repo_name}' is not registered in Smart Deploy.")
+        # استخراج نام ریپازیتوری ارسالی از گیت‌هاب
+        repo_full_name = payload.get("repository", {}).get("full_name", "")
+        print(f"Target Repository: {repo_full_name}")
 
-    # اجرای پروسه در پس‌زمینه تا سرور گیت‌هاب با خطای Timeout به دلیل طولانی شدن زمان بیلد مواجه نشود
-    background_tasks.add_task(handle_deployment, project_info)
-    
-    return {"status": "Deployment job queued successfully", "repository": repo_name}
+        # جستجوی پروژه در دیتابیس با استفاده از تابع پایگاه‌داده
+        project_data = get_project(repo_full_name)
+        
+        # در صورتی که به خاطر حروف کوچک/بزرگ پیدا نشد (Fallback)
+        if not project_data:
+            projects = load_projects()
+            for key, val in projects.items():
+                if key.lower() == repo_full_name.lower():
+                    project_data = val
+                    break
+
+        if project_data:
+            print(f"Match found! Queuing deployment for {repo_full_name} at {project_data['path']}")
+            
+            # اجرای دیپلوی در پس‌زمینه با استفاده از تابع صحیح از detector.py
+            background_tasks.add_task(
+                detect_and_deploy, 
+                project_data["path"], 
+                project_data.get("restart_cmd")
+            )
+            return {"message": "Deployment queued"}
+        else:
+            print(f"Ignored: Repository {repo_full_name} is not registered in smart-deploy.")
+            return {"message": "Repository not registered"}
+
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return {"error": str(e)}

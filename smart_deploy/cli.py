@@ -1,3 +1,4 @@
+import uvicorn
 import typer
 import shutil
 import getpass
@@ -40,9 +41,7 @@ def start(port: int = typer.Option(9000, "--port", "-p", help="Port number for t
     Start the background FastAPI server to listen for GitHub webhooks.
     """
     typer.secho(f"Initializing Smart Deploy Listener on port {port}...", fg=typer.colors.CYAN)
-    
-    # فراخوانی Uvicorn به عنوان سرور اجرای FastAPI
-    subprocess.run(["uvicorn", "smart_deploy.server:app", "--host", "0.0.0.0", "--port", str(port)])
+    uvicorn.run("smart_deploy.server:app", host="0.0.0.0", port=port)
 
 @app.command()
 def generate_service(port: int = typer.Option(9000, "--port", "-p", help="Port number for the webhook listener")):
