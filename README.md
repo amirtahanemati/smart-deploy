@@ -138,8 +138,4 @@ When a push webhook is triggered, Smart Deploy analyzes the target directory on 
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
-Developed with ❤️ by [Amirtaha Nemati](https://github.com/amirtahanemati/?utm_source=gemini).
-
-```
-
-```
+Developed with ❤️ by [Amirtaha Nemati](https://github.com/amirtahanemati).
