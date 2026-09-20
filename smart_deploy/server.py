@@ -10,19 +10,17 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         payload = await request.json()
         
-        # بررسی اینکه آیا درخواست از نوع پوش (Push) است
+        # Verify if the event is a push
         if "ref" not in payload:
             print("Ignored: Not a push event.")
             return {"message": "Ignored: Not a push event"}
 
-        # استخراج نام ریپازیتوری ارسالی از گیت‌هاب
         repo_full_name = payload.get("repository", {}).get("full_name", "")
         print(f"Target Repository: {repo_full_name}")
 
-        # جستجوی پروژه در دیتابیس با استفاده از تابع پایگاه‌داده
         project_data = get_project(repo_full_name)
         
-        # در صورتی که به خاطر حروف کوچک/بزرگ پیدا نشد (Fallback)
+        # Fallback for case-insensitive matches
         if not project_data:
             projects = load_projects()
             for key, val in projects.items():
@@ -33,7 +31,7 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         if project_data:
             print(f"Match found! Queuing deployment for {repo_full_name} at {project_data['path']}")
             
-            # اجرای دیپلوی در پس‌زمینه با استفاده از تابع صحیح از detector.py
+            # Execute deployment process in the background
             background_tasks.add_task(
                 detect_and_deploy, 
                 project_data["path"], 

@@ -17,11 +17,11 @@ def setup_webhook(repo_name: str, token: str, server_url: str) -> bool:
         "config": {
             "url": target_webhook_url,
             "content_type": "json",
-            "insecure_ssl": "1" # مجاز کردن کانکشن‌های بدون SSL برای سرورهای تستی
+            "insecure_ssl": "1" # Allow insecure SSL for testing servers
         }
     }
     
-    # بررسی وب‌هوک‌های فعلی ریپازیتوری برای جلوگیری از ثبت آدرس تکراری
+    # Check existing webhooks to prevent duplicates
     try:
         response = requests.get(api_url, headers=headers)
         if response.status_code == 200:
@@ -32,7 +32,7 @@ def setup_webhook(repo_name: str, token: str, server_url: str) -> bool:
     except Exception as e:
         print(f"Failed to fetch existing webhooks: {e}")
         
-    # ثبت وب‌هوک جدید روی ریپازیتوری
+    # Register the new webhook
     try:
         response = requests.post(api_url, headers=headers, json=payload)
         if response.status_code == 201:
