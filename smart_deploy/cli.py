@@ -7,7 +7,6 @@ import string
 from .database import save_project, save_pairing_code
 from .github_api import setup_webhook
 
-# Initialize Typer CLI apps
 app = typer.Typer(help="Smart Deploy: Automated CI/CD Tool for Developers")
 bot_app = typer.Typer(help="Manage Telegram Bot Integration")
 app.add_typer(bot_app, name="bot")
@@ -32,12 +31,15 @@ def add(
     path: str = typer.Argument(..., help="Absolute local path on the server"),
     server_url: str = typer.Argument(..., help="Public URL or IP of this server"),
     token: str = typer.Option(None, "--token", "-t", help="GitHub Personal Access Token"),
-    restart_cmd: str = typer.Option(None, "--restart", "-r", help="Custom restart command")
+    restart_cmd: str = typer.Option(None, "--restart", "-r", help="Custom restart command"),
+    proxy: str = typer.Option(None, "--proxy", "-x", help="Local proxy URL (e.g., http://127.0.0.1:10808)")
 ):
     """Register a new project and automatically configure its GitHub webhook."""
     typer.echo(f"Registering project: {repo_url} at {path}")
+    if proxy:
+        typer.echo(f"Proxy configured for deployments: {proxy}")
     
-    repo_name = save_project(repo_url, path, token, restart_cmd)
+    repo_name = save_project(repo_url, path, token, restart_cmd, proxy)
     typer.secho(f"Project '{repo_name}' successfully added to the local database.", fg=typer.colors.GREEN)
     
     if token:

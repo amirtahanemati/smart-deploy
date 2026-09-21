@@ -10,7 +10,6 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         payload = await request.json()
         
-        # Verify if the event is a push
         if "ref" not in payload:
             print("Ignored: Not a push event.")
             return {"message": "Ignored: Not a push event"}
@@ -20,7 +19,6 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 
         project_data = get_project(repo_full_name)
         
-        # Fallback for case-insensitive matches
         if not project_data:
             projects = load_projects()
             for key, val in projects.items():
@@ -31,11 +29,11 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         if project_data:
             print(f"Match found! Queuing deployment for {repo_full_name} at {project_data['path']}")
             
-            # Execute deployment process in the background
             background_tasks.add_task(
                 detect_and_deploy, 
                 project_data["path"], 
-                project_data.get("restart_cmd")
+                project_data.get("restart_cmd"),
+                project_data.get("proxy")
             )
             return {"message": "Deployment queued"}
         else:

@@ -22,7 +22,13 @@ def load_projects() -> dict:
     with open(DB_FILE, "r") as f:
         return json.load(f)
 
-def save_project(repo_url: str, path: str, token: Optional[str] = None, restart_cmd: Optional[str] = None) -> str:
+def save_project(
+    repo_url: str, 
+    path: str, 
+    token: Optional[str] = None, 
+    restart_cmd: Optional[str] = None, 
+    proxy: Optional[str] = None
+) -> str:
     projects = load_projects()
     repo_name = repo_url.replace("https://github.com/", "").replace(".git", "")
     
@@ -30,7 +36,8 @@ def save_project(repo_url: str, path: str, token: Optional[str] = None, restart_
         "repo_url": repo_url,
         "path": path,
         "token": token,
-        "restart_cmd": restart_cmd
+        "restart_cmd": restart_cmd,
+        "proxy": proxy
     }
     with open(DB_FILE, "w") as f:
         json.dump(projects, f, indent=4)
