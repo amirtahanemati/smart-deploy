@@ -65,7 +65,7 @@ Ensure the target directory on your server is initialized as a Git repository an
 ```bash
 cd /var/www/your-project
 git init
-git remote add origin [https://github.com/YourUsername/your-repo.git](https://github.com/YourUsername/your-repo.git)
+git remote add origin https://github.com/YourUsername/your-repo.git
 git fetch origin
 git branch --set-upstream-to=origin/main main
 
@@ -78,7 +78,7 @@ Link your GitHub repository to the local directory. Smart Deploy will automatica
 **For Standard/Static Projects (e.g., React, Vite):**
 
 ```bash
-smart-deploy add [https://github.com/YourUsername/your-repo](https://github.com/YourUsername/your-repo) \
+smart-deploy add https://github.com/YourUsername/your-repo \
   /var/www/your-project \
   http://YOUR_SERVER_IP:9000 \
   --token "ghp_your_github_personal_access_token" \
@@ -89,12 +89,12 @@ smart-deploy add [https://github.com/YourUsername/your-repo](https://github.com/
 **For Next.js / Live Node.js Projects (With Proxy & PM2):**
 
 ```bash
-smart-deploy add [https://github.com/YourUsername/your-repo](https://github.com/YourUsername/your-repo) \
+smart-deploy add https://github.com/YourUsername/your-repo \
   /var/www/your-project \
   http://YOUR_SERVER_IP:9000 \
   --token "ghp_your_github_personal_access_token" \
   --restart "pm2 restart my-app" \
-  --proxy "[http://127.0.0.1:10808](http://127.0.0.1:10808)"
+  --proxy "http://127.0.0.1:10808"
 
 ```
 
