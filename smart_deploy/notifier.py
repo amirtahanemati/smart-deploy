@@ -1,18 +1,26 @@
 import os
+import json
 import requests
-from dotenv import load_dotenv
-from .database import get_pairing_code
 
-load_dotenv()
+CONFIG_PATH = os.path.expanduser("~/.smart-deploy/config.json")
 
-CENTRAL_BOT_URL = os.getenv("CENTRAL_BOT_URL", "https://bot.tahanemati.ir/api/notify")
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "default_secret_key") 
+def load_config():
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
 
 def send_notification(message: str):
-    """Push deployment logs to the central Telegram bot server."""
-    pairing_code = get_pairing_code()
+    config = load_config()
     
-    if not pairing_code:
+    url = config.get("url")
+    secret = config.get("secret")
+    pairing_code = config.get("pairing_code")
+    
+    if not all([url, secret, pairing_code]):
         return
         
     payload = {
@@ -21,16 +29,11 @@ def send_notification(message: str):
     }
     
     headers = {
-        "Authorization": f"Bearer {WEBHOOK_SECRET}",
+        "Authorization": f"Bearer {secret}",
         "Content-Type": "application/json"
     }
     
-    proxies = {
-        "http": None,
-        "https": None
-    }
-    
     try:
-        requests.post(CENTRAL_BOT_URL, json=payload, headers=headers, proxies=proxies, timeout=5)
-    except Exception as e:
-        print(f"Failed to push log to central bot server: {e}", flush=True)
+        requests.post(url, json=payload, headers=headers, timeout=5)
+    except Exception:
+        pass
