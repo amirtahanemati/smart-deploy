@@ -8,22 +8,23 @@
 
 **Smart Deploy** is a lightweight, zero-configuration CI/CD tool designed for independent developers and small teams. It bridges the gap between your GitHub repositories and your Linux server, automating the entire deployment process with a single command.
 
-No complex YAML files. No heavy Jenkins pipelines. Just raw efficiency.
+No complex YAML files. No heavy Jenkins pipelines. No manual `.env` configurations. Just raw efficiency.
 
 ## ✨ Features
 
-- **Zero-Config Webhooks**: Automatically configures GitHub webhooks using your Personal Access Token.
-- **Smart Framework Detection**: Automatically detects Node.js (Next.js/React) and Python projects.
-- **Auto Dependency Resolution**: Runs `npm install`, `npm run build`, or `pip install` based on your project's ecosystem.
-- **Custom Post-Deploy Commands**: Seamlessly integrates with process managers like PM2 or Systemd.
-- **Native Systemd Integration**: Includes a built-in command to generate Linux background services.
-- **Multi-Project Support**: Manage dozens of projects on a single server with one lightweight background listener.
+- **Zero-Config Architecture:** No need to manually create `.env` files or edit system variables. Everything is handled securely via CLI tokens.
+- **Real-Time Telegram Notifications:** Get instant deployment logs (success, failure, build times) directly to your Telegram via secure Magic Tokens.
+- **Smart Auto-Rollback:** If a build crashes (e.g., failed `npm build`), Smart Deploy automatically rolls back to the last stable Git commit and restarts your service to prevent downtime.
+- **Anti-Sanction Proxy Support:** Built-in proxy routing to seamlessly download dependencies (`npm`, `pip`) on servers with restricted network access.
+- **Zero-Touch Webhooks:** Automatically configures GitHub webhooks using your Personal Access Token.
+- **Framework Auto-Detection:** Intelligently detects Node.js (Next.js/React) and Python ecosystems.
+- **Native Systemd Integration:** Generates Linux background services automatically without requiring manual environment variables.
 
 ---
 
 ## 📦 Installation
 
-Smart Deploy is published on PyPI, making installation incredibly simple. It is recommended to use `pipx` to install it globally in an isolated environment on your Linux server:
+Smart Deploy is published on PyPI. It is highly recommended to use `pipx` to install it globally in an isolated environment on your Linux server:
 
 ```bash
 # Install using pipx (Recommended for Linux servers)
@@ -37,7 +38,16 @@ pip install smart-deploy
 
 ## 🚀 Quick Start
 
-### 1. Generate & Start the Background Service
+### 1. Link to Telegram Bot (Zero-Config Setup)
+
+Get your Magic Token from our central Telegram bot (`@smartdepbot`) and link your server securely in one step. This eliminates the need for `.env` files:
+
+```bash
+smart-deploy bot link eyJ1cmwiOiAiaHR0cDovLz...
+
+```
+
+### 2. Generate & Start the Background Service
 
 To ensure Smart Deploy runs 24/7 and survives server reboots, run the built-in service generator:
 
@@ -48,27 +58,27 @@ smart-deploy generate-service --port 9000
 
 _Follow the on-screen instructions to create, enable, and start the `systemd` service._
 
-### 2. Prepare Your Server Directory
+### 3. Prepare Your Server Directory
 
 Ensure the target directory on your server is initialized as a Git repository and connected to your GitHub remote:
 
 ```bash
 cd /var/www/your-project
 git init
-git remote add origin https://github.com/YourUsername/your-repo.git
+git remote add origin [https://github.com/YourUsername/your-repo.git](https://github.com/YourUsername/your-repo.git)
 git fetch origin
 git branch --set-upstream-to=origin/main main
 
 ```
 
-### 3. Register Your Project
+### 4. Register Your Project
 
 Link your GitHub repository to the local directory. Smart Deploy will automatically contact the GitHub API and configure the webhook.
 
 **For Standard/Static Projects (e.g., React, Vite):**
 
 ```bash
-smart-deploy add https://github.com/YourUsername/your-repo \
+smart-deploy add [https://github.com/YourUsername/your-repo](https://github.com/YourUsername/your-repo) \
   /var/www/your-project \
   http://YOUR_SERVER_IP:9000 \
   --token "ghp_your_github_personal_access_token" \
@@ -76,26 +86,28 @@ smart-deploy add https://github.com/YourUsername/your-repo \
 
 ```
 
-**For Next.js / Live Node.js Projects (using PM2):**
+**For Next.js / Live Node.js Projects (With Proxy & PM2):**
 
 ```bash
-smart-deploy add https://github.com/YourUsername/your-repo \
+smart-deploy add [https://github.com/YourUsername/your-repo](https://github.com/YourUsername/your-repo) \
   /var/www/your-project \
   http://YOUR_SERVER_IP:9000 \
   --token "ghp_your_github_personal_access_token" \
-  --restart "npm run build && pm2 restart my-app"
+  --restart "pm2 restart my-app" \
+  --proxy "[http://127.0.0.1:10808](http://127.0.0.1:10808)"
 
 ```
 
 **Parameters Explained:**
 
 - `Repo URL`: The target GitHub repository URL.
-- `Local Path`: The absolute path to your project on the server (e.g., `/var/www/your-project`).
+- `Local Path`: The absolute path to your project on the server.
 - `Server URL`: Your server's public IP/Domain and the port (e.g., `http://123.45.67.89:9000`).
 - `--token`: Your GitHub Personal Access Token (requires `repo` and `admin:repo_hook` permissions).
 - `--restart`: (Optional) The command to run after pulling and building the code.
+- `--proxy`: (Optional) Local proxy URL to bypass network restrictions during `npm install` or `pip install`.
 
-### 4. Push and Relax
+### 5. Push and Relax
 
 Now, simply push your code from your local machine:
 
@@ -105,32 +117,28 @@ git push
 
 ```
 
-Smart Deploy will intercept the webhook, pull the latest code, install dependencies, build the project, and restart the service automatically.
-You can monitor the live deployment logs on your server using:
-
-```bash
-sudo journalctl -u smart-deploy.service -f
-
-```
+Smart Deploy will intercept the webhook, pull the latest code, install dependencies, build the project, restart the service, and send a **beautiful success report to your Telegram**.
 
 ---
 
-## 🧠 How the Smart Detector Works
+## 🧠 Smart Detector & Auto-Rollback
 
-When a push webhook is triggered, Smart Deploy analyzes the target directory on your server:
+When a push webhook is triggered, Smart Deploy analyzes your project:
 
-1. **Pull Code:** Executes `git pull` to fetch the latest commits.
-2. **Node.js / Next.js**: If `package.json` is found, it executes `npm install`. If `next.config.js` or `next.config.mjs` is also present, it proceeds with `npm run build`.
-3. **Python**: If `requirements.txt` is found, it automatically locates your virtual environment (`venv`) and runs `pip install -r requirements.txt`.
-4. **Custom Execution**: Finally, it runs the custom `--restart` command provided during the `add` step.
+1. **Pull Code:** Executes `git pull` (routed through your proxy if configured).
+2. **Node.js / Next.js**: If `package.json` is found, runs `npm install`. If `next.config.js` is present, proceeds with `npm run build`.
+3. **Python**: Locates your virtual environment (`venv`) and runs `pip install -r requirements.txt`.
+4. **Execution**: Runs your custom `--restart` command.
+5. **🛡️ Auto-Rollback:** If any step fails (e.g., a syntax error crashes the build), Smart Deploy instantly runs `git reset --hard` to the previous commit, restarts your app to keep it online, and alerts you on Telegram.
 
 ---
 
 ## 🛠️ CLI Commands Reference
 
-- `smart-deploy add`: Register a new project and set up webhooks automatically.
-- `smart-deploy start`: Launch the FastAPI webhook receiver directly in the terminal (for testing).
-- `smart-deploy generate-service`: Generate a systemd unit file for production background execution.
+- `smart-deploy bot link <TOKEN>`: Securely connect your server to Telegram notifications.
+- `smart-deploy add`: Register a project and auto-configure GitHub webhooks.
+- `smart-deploy generate-service`: Generate a systemd unit file for Linux.
+- `smart-deploy start`: Launch the FastAPI receiver directly in the terminal (for testing).
 - `smart-deploy --help`: View the detailed help menu.
 
 ---
