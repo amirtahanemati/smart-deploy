@@ -2,28 +2,49 @@ import uvicorn
 import typer
 import shutil
 import getpass
-import random
-import string
-from .database import save_project, save_pairing_code
+import base64
+import json
+import os
+import sys
+from .database import save_project
 from .github_api import setup_webhook
 
 app = typer.Typer(help="Smart Deploy: Automated CI/CD Tool for Developers")
 bot_app = typer.Typer(help="Manage Telegram Bot Integration")
 app.add_typer(bot_app, name="bot")
 
-@bot_app.command("connect")
-def bot_connect():
-    """Generate a pairing code to connect this server to the centralized Telegram bot."""
-    characters = string.ascii_uppercase + string.digits
-    pairing_code = ''.join(random.choices(characters, k=6))
-    
-    save_pairing_code(pairing_code)
-    
-    typer.secho("\n✅ Server Pairing Code Generated Successfully!", fg=typer.colors.GREEN, bold=True)
-    typer.echo(f"Code: {pairing_code}\n")
-    typer.echo("To complete the setup:")
-    typer.echo("1. Go to Telegram and search for @smartdepbot")
-    typer.echo(f"2. Send this exact command to the bot:\n\n   /connect {pairing_code}\n")
+CONFIG_DIR = os.path.expanduser("~/.smart-deploy")
+CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+
+@bot_app.command("link")
+def bot_link(
+    token: str = typer.Argument(..., help="The base64 magic token provided by the central Telegram bot")
+):
+    """Securely link this server to the central Telegram bot using a generated token."""
+    try:
+        # Decode the Base64 token
+        decoded_bytes = base64.b64decode(token)
+        config_data = json.loads(decoded_bytes.decode('utf-8'))
+        
+        # Validate the data structure
+        required_keys = ("url", "secret", "pairing_code")
+        if not all(k in config_data for k in required_keys):
+            typer.secho("❌ Error: Invalid token structure. Missing required security fields.", fg=typer.colors.RED)
+            raise typer.Exit(code=1)
+            
+        # Create the hidden directory and config file
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        
+        # Save the configuration securely
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(config_data, f, indent=4)
+            
+        typer.secho("\n✅ Server Successfully Linked to Telegram Bot!", fg=typer.colors.GREEN, bold=True)
+        typer.echo(f"🔗 Pairing Code: {config_data['pairing_code']}\n")
+        
+    except Exception as e:
+        typer.secho("❌ Error parsing token. Please ensure you copied the entire base64 string provided by the bot.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
 
 @app.command()
 def add(
