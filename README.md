@@ -93,8 +93,7 @@ smart-deploy add https://github.com/YourUsername/your-repo \
   /var/www/your-project \
   http://YOUR_SERVER_IP:9000 \
   --token "ghp_your_github_personal_access_token" \
-  --restart "pm2 restart my-app" \
-  --proxy "http://127.0.0.1:10808"
+  --restart "pm2 restart my-app"
 
 ```
 
